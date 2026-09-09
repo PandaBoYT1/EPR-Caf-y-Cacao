@@ -1,0 +1,20 @@
+# Dependencias
+node_modules/
+
+# Salidas de compilación / empaquetado
+out/
+dist/
+dist-electron/
+release/
+
+# Base de datos y respaldos locales (no se versionan datos)
+datos.db
+datos.db-*
+*.xlsx
+
+# Configuración local del entorno
+.claude/
+
+# Varios
+*.log
+.DS_Store

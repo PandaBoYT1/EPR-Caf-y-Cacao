@@ -178,6 +178,7 @@ function TablaRendimiento({ datos }: { datos: any[] }) {
           <th className="px-4 py-3">Proveedor</th>
           <th className="px-4 py-3 text-right">Merma</th>
           <th className="px-4 py-3 text-right">Merma %</th>
+          <th className="px-4 py-3 text-right">Rendimiento</th>
           <th className="px-4 py-3 text-right">Factor</th>
         </tr>
       </thead>
@@ -189,7 +190,8 @@ function TablaRendimiento({ datos }: { datos: any[] }) {
             <td className="px-4 py-3">{d.proveedor}</td>
             <td className="px-4 py-3 text-right">{d.merma_g} g</td>
             <td className="px-4 py-3 text-right">{d.merma_pct} %</td>
-            <td className="px-4 py-3 text-right font-semibold">{d.factor}</td>
+            <td className="px-4 py-3 text-right font-semibold">{d.rendimiento_pct ?? '—'}</td>
+            <td className="px-4 py-3 text-right">{d.factor}</td>
           </tr>
         ))}
       </tbody>

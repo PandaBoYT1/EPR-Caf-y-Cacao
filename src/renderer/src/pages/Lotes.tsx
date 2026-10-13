@@ -1,21 +1,25 @@
 import { useEffect, useState } from 'react';
 import { call } from '../lib/api';
-import type { Lote, Producto, EstadoProducto } from '@shared/types';
+import type { Lote, Producto, EstadoProducto, EstadoLote } from '@shared/types';
 import { PageHeader, Field, Modal, Alerta, Select, Vacio } from '../components/ui';
 import { formatearKg, formatearSoles, fechaCorta } from '../lib/format';
 
-const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
+const ETIQUETA_ESTADO: Record<EstadoLote, { texto: string; clase: string }> = {
   DISPONIBLE: { texto: 'Disponible', clase: 'bg-emerald-100 text-emerald-700' },
   PARCIAL: { texto: 'Parcial', clase: 'bg-amber-100 text-amber-700' },
   VENDIDO: { texto: 'Vendido', clase: 'bg-gray-200 text-gray-600' },
-  CERRADO: { texto: 'Cerrado', clase: 'bg-gray-200 text-gray-600' },
+  CERRADO: { texto: 'Fusionado', clase: 'bg-gray-200 text-gray-600' },
+  ANULADO: { texto: 'Anulado', clase: 'bg-red-100 text-red-700' },
 };
+
+const esActivo = (l: Lote) => l.estado_lote === 'DISPONIBLE' || l.estado_lote === 'PARCIAL';
 
 export default function Lotes() {
   const [lista, setLista] = useState<Lote[]>([]);
   const [crear, setCrear] = useState(false);
   const [detalle, setDetalle] = useState<Lote | null>(null);
   const [msg, setMsg] = useState('');
+  const [verInactivos, setVerInactivos] = useState(false);
 
   function cargar() {
     call<Lote[]>('lotes:listar').then(setLista);
@@ -23,7 +27,9 @@ export default function Lotes() {
   useEffect(cargar, []);
 
   // ¿Hay más de un lote abierto del mismo producto+estado? (duplicados fusionables)
-  const abiertos = lista.filter((l) => l.estado_lote === 'DISPONIBLE' || l.estado_lote === 'PARCIAL');
+  const abiertos = lista.filter(esActivo);
+  const visibles = verInactivos ? lista : abiertos;
+  const inactivos = lista.length - abiertos.length;
   const grupos = new Map<string, number>();
   for (const l of abiertos) {
     const k = `${l.producto_id}:${l.estado_id ?? 'n'}`;
@@ -62,16 +68,27 @@ export default function Lotes() {
         </div>
       )}
 
+      {inactivos > 0 && (
+        <label className="flex items-center gap-2 mb-4 text-sm text-gray-600">
+          <input type="checkbox" className="w-5 h-5" checked={verInactivos} onChange={(e) => setVerInactivos(e.target.checked)} />
+          Mostrar lotes vendidos, fusionados y anulados ({inactivos})
+        </label>
+      )}
+
       <div className="grid md:grid-cols-3 gap-4">
-        {lista.length === 0 && (
+        {visibles.length === 0 && (
           <div className="col-span-3">
-            <Vacio>No hay lotes creados todavía.</Vacio>
+            <Vacio>{lista.length === 0 ? 'No hay lotes creados todavía.' : 'No hay lotes con producto disponible.'}</Vacio>
           </div>
         )}
-        {lista.map((l) => {
+        {visibles.map((l) => {
           const et = ETIQUETA_ESTADO[l.estado_lote] ?? ETIQUETA_ESTADO.DISPONIBLE;
           return (
-            <button key={l.id} className="card text-left hover:shadow-md transition" onClick={() => setDetalle(l)}>
+            <button
+              key={l.id}
+              className={`card text-left hover:shadow-md transition ${esActivo(l) ? '' : 'opacity-60'}`}
+              onClick={() => setDetalle(l)}
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="font-mono font-bold text-lg">{l.codigo}</span>
                 <span className={`text-xs px-2 py-1 rounded-full ${et.clase}`}>{et.texto}</span>

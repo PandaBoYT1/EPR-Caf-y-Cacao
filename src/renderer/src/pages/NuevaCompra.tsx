@@ -207,7 +207,7 @@ export default function NuevaCompra() {
           <div className="card">
             <label className="flex items-center gap-3 cursor-pointer mb-2">
               <input type="checkbox" className="w-5 h-5" checked={conRend} onChange={(e) => setConRend(e.target.checked)} />
-              <span className="font-semibold text-gray-700">Registrar rendimiento (factor) del café</span>
+              <span className="font-semibold text-gray-700">Registrar rendimiento del café</span>
             </label>
             {conRend && (
               <div className="mt-3">

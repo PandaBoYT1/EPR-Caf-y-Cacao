@@ -18,7 +18,7 @@ export default function Rendimiento() {
     <div>
       <PageHeader
         title="Rendimiento del café"
-        subtitle="Calculadora rápida del factor. Solo ingresas los tres pesos."
+        subtitle="Calculadora rápida del rendimiento y el factor. Solo ingresas los tres pesos."
       />
       <div className="card">
         <RendimientoCalc
@@ -29,8 +29,9 @@ export default function Rendimiento() {
         />
       </div>
       <p className="text-gray-400 text-sm mt-4">
-        Fórmula usada: FACTOR = (70 × muestra inicial) ÷ almendra sana. Esta calculadora es para consulta;
-        el factor también se guarda automáticamente al registrar una compra de café.
+        Merma = muestra − pilado (cáscara). RENDIMIENTO = almendra sana ÷ (muestra ÷ 100): con 200 g se divide
+        entre 2, con 300 g entre 3. FACTOR = (70 × muestra) ÷ almendra sana. Esta calculadora es para consulta;
+        ambos valores también se guardan automáticamente al registrar una compra de café.
       </p>
     </div>
   );

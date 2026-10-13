@@ -35,11 +35,12 @@ productos (id, codigo, nombre, activo)                 -- café, cacao, extensib
 estados_producto (id, producto_id, codigo, nombre)     -- seco, semiseco, húmedo
 compras (id, codigo ENT-000001, fecha, proveedor_id, usuario_id, obs, anulada)
 detalle_compras (id, compra_id, producto_id, estado_id?, gramos, precio_centimos_kg, total_centimos, rendimiento_id?)
-rendimientos (id, muestra_g, pilado_g, almendra_g, merma_g, merma_pct, defectos_g, factor)
-lotes (id, codigo CAF-0001, producto_id, estado_id?, gramos, estado_lote, obs)
+rendimientos (id, muestra_g, pilado_g, almendra_g, merma_g, merma_pct, defectos_g, rendimiento_pct, factor)
+lotes (id, codigo CAF-0001, producto_id, estado_id?, gramos, estado_lote, fusionado_en?, obs)
 lote_detalle (id, lote_id, compra_detalle_id, gramos)
 ventas (id, codigo VEN-000001, fecha, comprador_id, usuario_id, obs, anulada)
 detalle_ventas (id, venta_id, producto_id, lote_id?, gramos, precio_centimos_kg, total_centimos)
+venta_lotes (id, detalle_venta_id, lote_id, gramos)    -- de qué lote(s) salió cada venta
 movimientos_inventario (id, fecha, producto_id, estado_id?, tipo, gramos, ref_tipo, ref_id, saldo_g)
 configuraciones (clave, valor)                          -- merma_min, merma_max, carpeta_respaldo, etc.
 ```
@@ -53,14 +54,24 @@ rentabilidad por lote, múltiples almacenes/sucursales, trazabilidad completa.
 
 **Rendimiento del café** (sección 7): el usuario ingresa solo 3 pesos; el sistema calcula todo.
 ```
-merma_g   = muestra − pilado
-merma_%   = merma_g / muestra × 100
-defectos  = pilado − almendra_sana
-FACTOR    = (70 × muestra) / almendra_sana
+merma_g      = muestra − pilado                 (cáscara; 200 g → 160 g = 40 g = 20 %)
+merma_%      = merma_g / muestra × 100
+defectos     = pilado − almendra_sana           (granos malos)
+RENDIMIENTO  = almendra_sana / (muestra / 100)  (200 g → ÷2, 300 g → ÷3; 140 g / 2 = 70)
+FACTOR       = (70 × muestra) / almendra_sana
 ```
 Advertencia (no bloquea) si la merma sale del rango de referencia **18–20 %** (configurable).
 
 **Inventario**: entrada suma, salida resta. No se permite stock negativo (salvo config admin).
+
+**Lotes y stock**: los lotes de un producto+estado nunca suman más que su stock.
+- Venta con lote → sale de ese lote. Venta sin lote → sale primero del stock suelto (compras sin
+  lote) y luego de los lotes abiertos más antiguos. Cada descuento queda en `venta_lotes`.
+- Anular venta → el producto vuelve al inventario y a los lotes de los que salió (si el lote se
+  fusionó, al lote destino).
+- Anular compra → se retira de su lote; si el lote queda sin entradas ni saldo pasa a ANULADO.
+  No se permite si su producto ya se vendió (anular primero la venta).
+- Estados de lote: DISPONIBLE, PARCIAL, VENDIDO, CERRADO (fusionado), ANULADO.
 
 **Historial**: las operaciones se **anulan**, nunca se borran (REGLA 1 y 8).
 

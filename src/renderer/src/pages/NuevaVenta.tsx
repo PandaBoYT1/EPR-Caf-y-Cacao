@@ -34,6 +34,8 @@ export default function NuevaVenta() {
   const producto = productos.find((p) => p.id === productoId);
   const esCafe = !!producto?.permite_estados;
   const loteSel = lotes.find((l) => l.id === loteId) ?? null;
+  // Con el estado ya elegido, solo se ofrecen los lotes de ese estado.
+  const lotesOfrecidos = esCafe && estadoId ? lotes.filter((l) => l.estado_id === estadoId) : lotes;
 
   function elegirLote(id: number | null) {
     setLoteId(id);
@@ -189,7 +191,10 @@ export default function NuevaVenta() {
               {estados.map((e) => (
                 <button
                   key={e.id}
-                  onClick={() => setEstadoId(e.id)}
+                  onClick={() => {
+                    setEstadoId(e.id);
+                    if (loteSel && loteSel.estado_id !== e.id) setLoteId(null);
+                  }}
                   className={`rounded-2xl p-4 font-bold border-2 transition ${
                     estadoId === e.id ? 'border-cafe bg-amber-50 text-cafe-dark' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                   }`}
@@ -211,12 +216,12 @@ export default function NuevaVenta() {
           )}
         </div>
 
-        {lotes.length > 0 && (
+        {lotesOfrecidos.length > 0 && (
           <div className="card">
             <Field label="Lote (opcional — al elegirlo se completa el estado)">
               <Select value={loteId ?? ''} onChange={(e) => elegirLote(Number(e.target.value) || null)}>
                 <option value="">Sin lote específico</option>
-                {lotes.map((l) => (
+                {lotesOfrecidos.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.codigo} · {formatearKg(l.gramos)}
                   </option>

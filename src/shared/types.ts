@@ -64,10 +64,11 @@ export interface Rendimiento {
   merma_g: number;
   merma_pct: number;
   defectos_g: number;
+  rendimiento_pct: number | null;
   factor: number;
 }
 
-export type EstadoLote = 'DISPONIBLE' | 'PARCIAL' | 'VENDIDO' | 'CERRADO';
+export type EstadoLote = 'DISPONIBLE' | 'PARCIAL' | 'VENDIDO' | 'CERRADO' | 'ANULADO';
 
 export interface Lote {
   id: number;
@@ -76,6 +77,8 @@ export interface Lote {
   estado_id: number | null;
   gramos: number;
   estado_lote: EstadoLote;
+  /** Lote destino si este lote se cerró por fusión. */
+  fusionado_en: number | null;
   obs: string | null;
   creado_en: string;
   producto_nombre?: string;
@@ -95,6 +98,7 @@ export interface FilaKardexEntrada {
   gramos: number;
   precio_centimos_kg: number;
   total_centimos: number;
+  rendimiento_pct: number | null;
   factor: number | null;
   anulada: number;
 }

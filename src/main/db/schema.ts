@@ -1,6 +1,6 @@
-/** Esquema de la base de datos (migración v1). Ver ARQUITECTURA.md. */
+/** Esquema de la base de datos (migraciones v1 y v2). Ver ARQUITECTURA.md. */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS configuraciones (
@@ -155,4 +155,30 @@ CREATE TABLE IF NOT EXISTS movimientos_inventario (
 CREATE INDEX IF NOT EXISTS idx_mov_prod ON movimientos_inventario(producto_id, estado_id);
 CREATE INDEX IF NOT EXISTS idx_compras_fecha ON compras(fecha);
 CREATE INDEX IF NOT EXISTS idx_ventas_fecha ON ventas(fecha);
+`;
+
+/**
+ * Migración v2:
+ *  - rendimientos.rendimiento_pct: almendra sana / (muestra / 100).
+ *  - lotes.fusionado_en: lote destino cuando un lote se cierra por fusión.
+ *  - venta_lotes: de qué lote(s) salió cada venta, para revertirla exactamente al anular.
+ */
+export const MIGRACION_V2_SQL = `
+ALTER TABLE rendimientos ADD COLUMN rendimiento_pct REAL;
+UPDATE rendimientos SET rendimiento_pct = ROUND(almendra_g * 100.0 / muestra_g, 2) WHERE muestra_g > 0;
+
+ALTER TABLE lotes ADD COLUMN fusionado_en INTEGER REFERENCES lotes(id);
+
+CREATE TABLE IF NOT EXISTS venta_lotes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  detalle_venta_id INTEGER NOT NULL REFERENCES detalle_ventas(id),
+  lote_id INTEGER NOT NULL REFERENCES lotes(id),
+  gramos INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_venta_lotes_det ON venta_lotes(detalle_venta_id);
+
+INSERT INTO venta_lotes (detalle_venta_id, lote_id, gramos)
+  SELECT d.id, d.lote_id, d.gramos
+  FROM detalle_ventas d JOIN ventas v ON v.id = d.venta_id
+  WHERE d.lote_id IS NOT NULL AND v.anulada = 0;
 `;

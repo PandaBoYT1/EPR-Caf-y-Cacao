@@ -31,7 +31,7 @@ npm test
 ```
 
 Verifica las reglas de negocio (rendimiento, inventario, dinero) y el flujo completo
-compra → inventario → venta con base de datos real. **30 pruebas.**
+compra → inventario → lotes → venta, y las anulaciones, con base de datos real. **52 pruebas.**
 
 ## Dónde se guardan los datos
 

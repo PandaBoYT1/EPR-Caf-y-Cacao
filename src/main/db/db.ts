@@ -2,7 +2,8 @@ import { existsSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 import initSqlJs, { type Database, type SqlValue } from 'sql.js';
 import { app } from 'electron';
-import { SCHEMA_SQL, SCHEMA_VERSION } from './schema';
+import { SCHEMA_SQL, SCHEMA_VERSION, MIGRACION_V2_SQL } from './schema';
+import { repararLotesConComprasAnuladas } from '../services/lotes';
 import { hashPassword } from '../security';
 
 export type Row = Record<string, SqlValue>;
@@ -108,6 +109,13 @@ function migrate(db: Db): void {
   const version = row?.user_version ?? 0;
   if (version < 1) {
     db.exec(SCHEMA_SQL);
+  }
+  if (version < 2) {
+    db.transaction(() => {
+      db.exec(MIGRACION_V2_SQL);
+      // Corrige lotes que conservaban compras ya anuladas (versiones anteriores).
+      repararLotesConComprasAnuladas(db);
+    });
   }
   db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   db.save();

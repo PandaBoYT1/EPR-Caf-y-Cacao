@@ -139,7 +139,7 @@ function ModalAnular({ fila, onClose, onHecho }: { fila: FilaKardexSalida | null
 
   return (
     <Modal open={!!fila} title={`Anular venta ${fila?.codigo ?? ''}`} onClose={onClose}>
-      <Alerta tipo="warn">La venta no se borra: queda como anulada y el producto regresa al inventario.</Alerta>
+      <Alerta tipo="warn">La venta no se borra: queda como anulada y el producto regresa al inventario y al lote del que salió.</Alerta>
       <div className="mt-4">
         <Field label="Motivo de la anulación">
           <input className="field" value={motivo} onChange={(e) => setMotivo(e.target.value)} autoFocus />

@@ -75,6 +75,7 @@ export default function Compras() {
                 <Th className="text-right">Cantidad</Th>
                 <Th className="text-right">Precio/kg</Th>
                 <Th className="text-right">Total</Th>
+                <Th className="text-right">Rend.</Th>
                 <Th className="text-right">Factor</Th>
                 {esAdmin && <Th></Th>}
               </tr>
@@ -90,6 +91,7 @@ export default function Compras() {
                   <Td className="text-right">{formatearKg(f.gramos)}</Td>
                   <Td className="text-right">{formatearSoles(f.precio_centimos_kg)}</Td>
                   <Td className="text-right font-semibold">{formatearSoles(f.total_centimos)}</Td>
+                  <Td className="text-right">{f.rendimiento_pct ?? '—'}</Td>
                   <Td className="text-right">{f.factor ?? '—'}</Td>
                   {esAdmin && (
                     <Td className="text-right">
@@ -139,7 +141,8 @@ function ModalAnular({ fila, onClose, onHecho }: { fila: FilaKardexEntrada | nul
 
   return (
     <Modal open={!!fila} title={`Anular compra ${fila?.codigo ?? ''}`} onClose={onClose}>
-      <Alerta tipo="warn">La compra no se borra: queda en el historial como anulada y se revierte del inventario.</Alerta>
+      <Alerta tipo="warn">La compra no se borra: queda en el historial como anulada, se revierte del inventario y se retira de su
+        lote (si el lote queda vacío, se anula).</Alerta>
       <div className="mt-4">
         <Field label="Motivo de la anulación">
           <input className="field" value={motivo} onChange={(e) => setMotivo(e.target.value)} autoFocus />

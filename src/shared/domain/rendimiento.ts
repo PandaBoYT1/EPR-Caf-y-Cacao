@@ -3,14 +3,18 @@
  *
  * El usuario ingresa SOLO tres pesos; el sistema calcula todo lo demás.
  *
- *   merma_g   = muestra_inicial − peso_pilado
- *   merma_%   = merma_g / muestra_inicial × 100
- *   defectos  = peso_pilado − almendra_sana
- *   FACTOR    = (70 × muestra_inicial) / almendra_sana
+ *   merma_g      = muestra_inicial − peso_pilado            (cáscara)
+ *   merma_%      = merma_g / muestra_inicial × 100
+ *   defectos     = peso_pilado − almendra_sana              (granos malos)
+ *   RENDIMIENTO  = almendra_sana / (muestra_inicial / 100)
+ *                  (muestra 200 g -> se divide entre 2; 300 g -> entre 3)
+ *   FACTOR       = (70 × muestra_inicial) / almendra_sana
  *
- * Ejemplo oficial (sección 28):
- *   muestra 250 g, pilado 205 g, almendra 193 g
- *   -> merma 45 g, merma 18 %, factor (70×250)/193 ≈ 90.67 (se muestra 90.6)
+ * Ejemplos:
+ *   muestra 200 g, pilado 160 g, almendra 140 g
+ *   -> merma 40 g (20 %), rendimiento 140 / 2 = 70
+ *   muestra 250 g, pilado 205 g, almendra 193 g (sección 28)
+ *   -> merma 45 g (18 %), rendimiento 77.2, factor (70×250)/193 ≈ 90.67 (se muestra 90.6)
  */
 
 /** Muestra inicial por defecto usada por el negocio (gramos). Configurable. */
@@ -44,6 +48,8 @@ export interface RendimientoResultado {
   mermaPct: number;
   /** Peso de granos defectuosos separados, en gramos. */
   defectosG: number;
+  /** Rendimiento: almendra sana / (muestra / 100) (2 decimales, ej. 70 o 77.2). */
+  rendimientoPct: number;
   /** Factor / rendimiento (2 decimales, ej. 90.67). */
   factor: number;
   /** Factor listo para mostrar, truncado a 1 decimal (ej. "90.6"). */
@@ -99,6 +105,10 @@ export function calcularRendimiento(
   const mermaPct =
     muestraInicialG > 0 ? redondear((mermaG / muestraInicialG) * 100, 2) : 0;
 
+  // Rendimiento: la almendra sana expresada por cada 100 g de muestra.
+  const rendimientoPct =
+    muestraInicialG > 0 ? redondear(almendraSanaG / (muestraInicialG / 100), 2) : 0;
+
   // Factor solo tiene sentido con almendra > 0.
   const factor =
     almendraSanaG > 0
@@ -127,6 +137,7 @@ export function calcularRendimiento(
     mermaG,
     mermaPct,
     defectosG,
+    rendimientoPct,
     factor,
     factorMostrar: truncar(factor, 1).toFixed(1),
     valido: errores.length === 0,

@@ -50,8 +50,9 @@ describe('Lotes: se agrupan por tipo + estado (no por proveedor)', () => {
   });
 
   it('fusionarDuplicados une lotes creados por separado', () => {
-    // Forzar un segundo lote aparte
-    crearLote(db, { producto_id: cafeId, estado_id: secoId, entradas: [], forzar_nuevo: true });
+    // Forzar un segundo lote aparte con una tercera compra
+    const c3 = registrarCompra(db, { fecha: '2026-09-06', proveedor_id: provId, usuario_id: 1, producto_id: cafeId, estado_id: secoId, kg: 100, precio_soles: 8 });
+    crearLote(db, { producto_id: cafeId, estado_id: secoId, entradas: [detalleDe(c3.codigo)], forzar_nuevo: true });
     expect(listarLotes(db, true).filter((l) => l.estado_nombre === 'Seco').length).toBe(2);
     const r = fusionarDuplicados(db);
     expect(r.fusionados).toBeGreaterThanOrEqual(1);
@@ -61,7 +62,7 @@ describe('Lotes: se agrupan por tipo + estado (no por proveedor)', () => {
 
 describe('Anular venta devuelve el stock', () => {
   it('el stock se restaura al anular una venta', () => {
-    const antes = stockDe(db, cafeId, secoId); // 800 kg
+    const antes = stockDe(db, cafeId, secoId); // 900 kg
     const v = registrarVenta(db, { fecha: '2026-09-07', comprador_id: compId, usuario_id: 1, producto_id: cafeId, estado_id: secoId, lote_id: null, kg: 200, precio_soles: 10 });
     expect(stockDe(db, cafeId, secoId)).toBe(antes - kgAGramos(200));
 
@@ -73,7 +74,7 @@ describe('Anular venta devuelve el stock', () => {
 
 describe('Referencia de precios', () => {
   it('el lote calcula el costo promedio de compra ponderado', () => {
-    // 500 kg × S/8 + 300 kg × S/8 = S/6,400 / 800 kg = S/8.00/kg = 800 céntimos/kg
+    // 500 kg + 300 kg + 100 kg, todo a S/8 → S/8.00/kg = 800 céntimos/kg
     const lote = listarLotes(db, true).find((l) => l.estado_nombre === 'Seco')!;
     expect(lote.costo_prom_centimos_kg).toBe(800);
   });

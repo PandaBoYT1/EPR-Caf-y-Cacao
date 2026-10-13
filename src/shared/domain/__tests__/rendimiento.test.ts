@@ -51,6 +51,27 @@ describe('Rendimiento — otros valores (sección 28: pruebas adicionales)', () 
   });
 });
 
+describe('Rendimiento — almendra sana / (muestra / 100)', () => {
+  it('muestra de 200 g: 140 g de almendra se divide entre 2 → 70', () => {
+    const r = calcularRendimiento({ muestraInicialG: 200, pesoPiladoG: 160, almendraSanaG: 140 });
+    expect(r.rendimientoPct).toBe(70);
+    // la merma no cambia: 40 g de cáscara = 20 %
+    expect(r.mermaG).toBe(40);
+    expect(r.mermaPct).toBe(20);
+    expect(r.defectosG).toBe(20);
+  });
+
+  it('muestra de 300 g: se divide entre 3', () => {
+    const r = calcularRendimiento({ muestraInicialG: 300, pesoPiladoG: 240, almendraSanaG: 210 });
+    expect(r.rendimientoPct).toBe(70);
+  });
+
+  it('muestra de 250 g: se divide entre 2.5', () => {
+    const r = calcularRendimiento({ muestraInicialG: 250, pesoPiladoG: 205, almendraSanaG: 193 });
+    expect(r.rendimientoPct).toBe(77.2);
+  });
+});
+
 describe('Rendimiento — validaciones (sección 9)', () => {
   it('rechaza almendra sana mayor que el pilado', () => {
     const r = calcularRendimiento({ muestraInicialG: 250, pesoPiladoG: 200, almendraSanaG: 210 });

@@ -6,6 +6,7 @@ import { calcularRendimiento } from '../../shared/domain/rendimiento';
 import { formatearCodigo, PREFIJOS } from '../../shared/domain/codes';
 import { registrarMovimiento, stockDe } from './inventario';
 import { mermaOpts, permitirStockNegativo } from './catalogos';
+import { quitarEntradaDeLotes, stockSueltoDe } from './lotes';
 
 export function registrarCompra(db: Db, p: NuevaCompra) {
   return db.transaction(() => {
@@ -21,9 +22,9 @@ export function registrarCompra(db: Db, p: NuevaCompra) {
       const r = calcularRendimiento(p.rendimiento, mermaOpts(db));
       if (!r.valido) throw new Error(r.errores.join(' '));
       rendimientoId = db.run(
-        `INSERT INTO rendimientos (muestra_g, pilado_g, almendra_g, merma_g, merma_pct, defectos_g, factor, creado_en)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [r.muestraInicialG, r.pesoPiladoG, r.almendraSanaG, r.mermaG, r.mermaPct, r.defectosG, r.factor, now],
+        `INSERT INTO rendimientos (muestra_g, pilado_g, almendra_g, merma_g, merma_pct, defectos_g, rendimiento_pct, factor, creado_en)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [r.muestraInicialG, r.pesoPiladoG, r.almendraSanaG, r.mermaG, r.mermaPct, r.defectosG, r.rendimientoPct, r.factor, now],
       ).lastId;
     }
 
@@ -55,27 +56,30 @@ export function registrarCompra(db: Db, p: NuevaCompra) {
   });
 }
 
-/** Anula una compra: revierte su entrada de inventario y la marca (no se borra). */
+/**
+ * Anula una compra: la saca de su lote (el lote queda ANULADO si se vacía), revierte su
+ * entrada de inventario y la marca como anulada (no se borra).
+ */
 export function anularCompra(db: Db, id: number, motivo: string) {
   return db.transaction(() => {
     const compra = db.get<{ anulada: number }>('SELECT anulada FROM compras WHERE id = ?', [id]);
     if (!compra) throw new Error('La compra no existe.');
     if (compra.anulada) throw new Error('La compra ya está anulada.');
 
-    const detalles = db.all<{ producto_id: number; estado_id: number | null; gramos: number }>(
-      'SELECT producto_id, estado_id, gramos FROM detalle_compras WHERE compra_id = ?',
+    const detalles = db.all<{ id: number; producto_id: number; estado_id: number | null; gramos: number }>(
+      'SELECT id, producto_id, estado_id, gramos FROM detalle_compras WHERE compra_id = ?',
       [id],
     );
     const permitir = permitirStockNegativo(db);
     for (const d of detalles) {
-      const actual = stockDe(db, d.producto_id, d.estado_id);
-      if (actual - d.gramos < 0 && !permitir) {
+      const enLote = quitarEntradaDeLotes(db, d.id, permitir);
+      // Una compra sin lote solo se puede anular si su producto sigue en el stock suelto.
+      const disponible = enLote ? stockDe(db, d.producto_id, d.estado_id) : stockSueltoDe(db, d.producto_id, d.estado_id);
+      if (disponible < d.gramos && !permitir) {
         throw new Error('No se puede anular: el producto de esta compra ya fue vendido.');
       }
-    }
-    for (const d of detalles) {
       registrarMovimiento(db, {
-        fecha: new Date().toISOString().slice(0, 10),
+        fecha: hoyLocal(),
         producto_id: d.producto_id,
         estado_id: d.estado_id,
         tipo: 'salida',
@@ -87,6 +91,12 @@ export function anularCompra(db: Db, id: number, motivo: string) {
     db.run('UPDATE compras SET anulada = 1, anulada_motivo = ? WHERE id = ?', [motivo, id]);
     return { ok: true };
   });
+}
+
+/** Fecha local YYYY-MM-DD (no UTC). */
+export function hoyLocal(d = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export interface FiltroKardex {
@@ -117,7 +127,7 @@ export function kardexEntrada(db: Db, f: FiltroKardex = {}): FilaKardexEntrada[]
   return db.all<FilaKardexEntrada>(
     `SELECT c.id, c.codigo, c.fecha, pr.nombre AS proveedor_nombre, p.nombre AS producto_nombre,
             e.nombre AS estado_nombre, d.gramos, d.precio_centimos_kg, d.total_centimos,
-            r.factor, c.anulada
+            r.rendimiento_pct, r.factor, c.anulada
      FROM detalle_compras d
      JOIN compras c ON c.id = d.compra_id
      JOIN proveedores pr ON pr.id = c.proveedor_id

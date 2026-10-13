@@ -196,7 +196,7 @@ export function ventasPorComprador(db: Db, f: FiltroKardex = {}) {
 export function historialRendimiento(db: Db, f: FiltroKardex = {}) {
   return db.all(
     `SELECT c.codigo, c.fecha, pr.nombre AS proveedor,
-            r.muestra_g, r.pilado_g, r.almendra_g, r.merma_g, r.merma_pct, r.factor
+            r.muestra_g, r.pilado_g, r.almendra_g, r.merma_g, r.merma_pct, r.rendimiento_pct, r.factor
      FROM rendimientos r
      JOIN detalle_compras d ON d.rendimiento_id = r.id
      JOIN compras c ON c.id = d.compra_id
@@ -258,13 +258,14 @@ export async function construirLibro(db: Db, f: FiltroKardex = {}): Promise<Buff
       { header: 'Cantidad', key: 'gramos', width: 14, fmt: FMT_KG, align: 'right' },
       { header: 'Precio/kg', key: 'precio', width: 14, fmt: FMT_SOLES, align: 'right' },
       { header: 'Total', key: 'total', width: 16, fmt: FMT_SOLES, align: 'right' },
+      { header: 'Rendimiento', key: 'rendimiento_pct', width: 13, fmt: FMT_FACTOR, align: 'right' },
       { header: 'Factor', key: 'factor', width: 10, fmt: FMT_FACTOR, align: 'right' },
       { header: 'Anulada', key: 'anulada', width: 10, align: 'center' },
     ],
     kardexEntrada(db, { ...f, incluir_anuladas: true }).map((r) => ({
       codigo: r.codigo, fecha: r.fecha, proveedor_nombre: r.proveedor_nombre, producto_nombre: r.producto_nombre,
       estado_nombre: r.estado_nombre ?? '—', gramos: kg(r.gramos), precio: soles(r.precio_centimos_kg),
-      total: soles(r.total_centimos), factor: r.factor ?? '', anulada: r.anulada ? 'SÍ' : '',
+      total: soles(r.total_centimos), rendimiento_pct: r.rendimiento_pct ?? '', factor: r.factor ?? '', anulada: r.anulada ? 'SÍ' : '',
     })),
   );
 
@@ -306,6 +307,7 @@ export async function construirLibro(db: Db, f: FiltroKardex = {}): Promise<Buff
       { header: 'Almendra (g)', key: 'almendra_g', width: 12, align: 'right' },
       { header: 'Merma (g)', key: 'merma_g', width: 12, align: 'right' },
       { header: 'Merma %', key: 'merma_pct', width: 12, fmt: FMT_FACTOR, align: 'right' },
+      { header: 'Rendimiento', key: 'rendimiento_pct', width: 13, fmt: FMT_FACTOR, align: 'right' },
       { header: 'Factor', key: 'factor', width: 10, fmt: FMT_FACTOR, align: 'right' },
     ],
     historialRendimiento(db, f) as any[],
